@@ -1,0 +1,47 @@
+name: Build spconv for Windows (PyTorch 2.8 cu128)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-2022
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v4
+      with:
+        submodules: true
+
+    - name: Install CUDA Toolkit 12.4 (NVCC)
+      uses: Jimver/cuda-toolkit@v0.2.11
+      with:
+        cuda: "12.4.0"
+
+    - name: Setup Python 3.11
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+
+    - name: Install PyTorch 2.8 + cu128
+      run: |
+        pip install torch==2.8.0 --index-url https://download.pytorch.org/whl/cu128
+
+    - name: Install build dependencies
+      run: |
+        pip install ninja cmake setuptools wheel
+
+    - name: Set CUDA and arch env
+      run: |
+        setx CUDA_HOME "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v12.4"
+        setx TORCH_CUDA_ARCH_LIST "8.9"  # RTX 5080 / Blackwell
+
+    - name: Build wheel
+      run: |
+        pip wheel . -v
+
+    - name: Upload wheel artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: spconv-cu128-win
+        path: "*.whl"
